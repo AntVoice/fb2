@@ -18,6 +18,6 @@ let ``Check parsed TOML`` () =
     Check.That(project.Value.TargetFramework).Equals("2018") |> ignore
 
     Check.That(project.Value.ProjectReferences.Length).Equals(3) |> ignore
-    Check.That(project.Value.ProjectReferences.[0]).Equals("../bidder_contract") |> ignore
-    Check.That(project.Value.ProjectReferences.[1]).Equals("../../Shared/rust-protobuf-schema") |> ignore
-    Check.That(project.Value.ProjectReferences.[2]).Equals("../../library/pubsub") |> ignore
+    Check.That(project.Value.ProjectReferences.[0]).Equals("bidder_contract/Cargo.toml") |> ignore
+    Check.That(project.Value.ProjectReferences.[1]).Equals("../Shared/rust-protobuf-schema/Cargo.toml") |> ignore
+    Check.That(project.Value.ProjectReferences.[2]).Equals("../library/pubsub/Cargo.toml") |> ignore
