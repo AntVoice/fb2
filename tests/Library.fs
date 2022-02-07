@@ -80,6 +80,8 @@ module Tests =
                     DependsOn = [||]
                     Parameters = { DotnetApplication.Publish = ignore } |> DotnetApplication
                     Deploy = ignore
+                    AlwaysRebuild = false
+                    IgnoreBuild = false
                 }
             |]
         }
@@ -101,6 +103,8 @@ module Tests =
                     DependsOn = [|"somefolder"|]
                     Parameters = { DotnetApplication.Publish = ignore } |> DotnetApplication
                     Deploy = ignore
+                    AlwaysRebuild = false
+                    IgnoreBuild = false
                 }
             |]
         }
@@ -120,6 +124,8 @@ module Tests =
                     DependsOn = [|"somefolder"|]
                     Parameters = { CustomApplication.Publish = ignore } |> CustomApplication
                     Deploy = ignore
+                    AlwaysRebuild = false
+                    IgnoreBuild = false
                 }
             |]
         }
@@ -127,3 +133,24 @@ module Tests =
         let impacted = Graph.getImpactedProjects structure files
         Check.That(impacted.Projects).IsEmpty() |> ignore
         Check.That(impacted.Applications).Not.IsEmpty() |> ignore
+    
+    [<Fact>]
+    let ``Ignored applications detection - custom app - base folder trigger`` () =
+        let structure = {
+            ProjectStructure.RootFolder = "/somefolder"
+            Projects = [||]
+            Applications = [|
+                {
+                    Application.Name = "Project1"
+                    DependsOn = [|"somefolder"|]
+                    Parameters = { CustomApplication.Publish = ignore } |> CustomApplication
+                    Deploy = ignore
+                    AlwaysRebuild = true
+                    IgnoreBuild = true
+                }
+            |]
+        }
+        let files = [|"somefolder/file1.txt"|]
+        let impacted = Graph.getImpactedProjects structure files
+        Check.That(impacted.Projects).IsEmpty() |> ignore
+        Check.That(impacted.Applications).IsEmpty() |> ignore

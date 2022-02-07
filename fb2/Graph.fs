@@ -1,4 +1,4 @@
-﻿namespace IncrementalBuild
+namespace IncrementalBuild
 open System.IO
 open Model
 
@@ -13,6 +13,8 @@ module Application =
         DependsOn : string array
         Publish : unit -> unit
         Deploy : Artifact[] -> unit
+        AlwaysRebuild : bool
+        IgnoreBuild : bool
     }
     let dotnet name (parameters:DotnetApplicationProperties) =
         {
@@ -20,6 +22,8 @@ module Application =
             DependsOn = parameters.DependsOn
             Parameters = DotnetApplication {DotnetApplication.Publish = parameters.Publish }
             Deploy = parameters.Deploy
+            AlwaysRebuild = false
+            IgnoreBuild = false
         }
     let custom name (parameters:CustomApplicationProperties) =
         if parameters.DependsOn |> Array.isEmpty then failwithf "Custom application should have at least one folder dependency for app %s" name
@@ -28,6 +32,8 @@ module Application =
             DependsOn = parameters.DependsOn
             Parameters = CustomApplication { Publish = parameters.Publish }
             Deploy = parameters.Deploy
+            AlwaysRebuild = parameters.AlwaysRebuild
+            IgnoreBuild = parameters.IgnoreBuild
         }
 
 module Graph =
@@ -137,20 +143,41 @@ module Graph =
                                 |> Array.exists(fun dependsOnDir -> files |> Seq.exists (fun f -> dependsOnDir |> f.StartsWith))
                 )
 
+        let getAllAlwaysRebuildApplications =
+            structure.Applications
+            |> Array.where (fun app ->
+                printfn "application %s has a always-rebuild option = %b" app.Name app.AlwaysRebuild
+                app.AlwaysRebuild = true)         
+        
+        let getAllIgnoredApplication =
+            structure.Applications
+            |> Array.where(fun app ->
+                printfn "application %s has an ignore option = %b" app.Name app.IgnoreBuild
+                app.IgnoreBuild = true)
+        
         let allImpactedProjects =
             seq {
                 yield! directImpactedProjects |> Seq.collect (fun p -> p |> getProjectWithDependentProjects structure)
                 yield! directImpactedApplications |> Array.choose getCorrespondingDotnetProject
+                yield! getAllAlwaysRebuildApplications |> Array.choose getCorrespondingDotnetProject
             }
             |> Seq.distinct
+            |> Seq.filter (fun project ->
+                getAllIgnoredApplication |>
+                Array.choose getCorrespondingDotnetProject |>
+                Seq.contains project |> not)            
             |> Array.ofSeq
 
         let allImpactedApplications =
             seq {
                 yield! directImpactedApplications
+                yield! getAllAlwaysRebuildApplications
                 yield! allImpactedProjects |> Array.choose getCorrespondingApplication
             }
             |> Seq.distinctBy(fun app -> app.Name)
+            |> Seq.filter (fun app ->
+                getAllIgnoredApplication |>
+                Seq.where(fun a -> a.Name = app.Name) |> Seq.isEmpty)
             |> Array.ofSeq
         {
             Applications = allImpactedApplications
