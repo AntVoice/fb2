@@ -1,4 +1,4 @@
-﻿namespace IncrementalBuild
+namespace IncrementalBuild
 
 open System
 open System.IO

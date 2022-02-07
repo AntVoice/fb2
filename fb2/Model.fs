@@ -52,6 +52,8 @@ module Model =
         DependsOn : string array
         Parameters : ApplicationType
         Deploy : Artifact array -> unit
+        AlwaysRebuild : bool
+        IgnoreBuild : bool
     }
 
     type ProjectStructure = {
