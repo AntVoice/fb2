@@ -4,11 +4,11 @@ module Zip =
     open System.IO
     open System.IO.Compression
 
-    let zip rootFolder targetFile files = 
+    let zip (rootFolder: string) targetFile files =
         use zipFile = new FileStream(targetFile, FileMode.Create)
         use archive = new ZipArchive(zipFile, ZipArchiveMode.Create)
         for file:string in files do
-            let relativeFilePath =    
+            let relativeFilePath =
                 if file.StartsWith(rootFolder) then
                     file.Substring(rootFolder.Length)
                 else failwith "All files should be in the root folder"
@@ -25,4 +25,3 @@ module Zip =
                 Directory.CreateDirectory(directory) |> ignore
             if file.Name <> "" then
                 file.ExtractToFile(completeFileName, true)
-        

@@ -22,7 +22,7 @@ module Tests =
             |> Array.sort
 
         Check.That(structure.RootFolder).IsEqualTo(repoAbsolutePath) |> ignore
-        Check.That(seq folders).ContainsExactly("/", "fb2/", "tests/") |> ignore
+        Check.That(seq folders).ContainsExactly("fb2/", "tests/") |> ignore
         Check.That(seq (project "tests").ProjectReferences).ContainsExactly("fb2/fb2.fsproj") |> ignore
 
     [<Fact>]
@@ -133,7 +133,7 @@ module Tests =
         let impacted = Graph.getImpactedProjects structure files
         Check.That(impacted.Projects).IsEmpty() |> ignore
         Check.That(impacted.Applications).Not.IsEmpty() |> ignore
-    
+
     [<Fact>]
     let ``Ignored applications detection - custom app - base folder trigger`` () =
         let structure = {

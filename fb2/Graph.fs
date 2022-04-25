@@ -9,32 +9,47 @@ module Application =
         Publish : Project -> unit
         Deploy : Artifact[] -> unit
     }
+
     type CustomApplicationProperties = {
         DependsOn : string array
         Publish : unit -> unit
         Deploy : Artifact[] -> unit
+    }
+
+    type BuildDirectives = {
         AlwaysRebuild : bool
         IgnoreBuild : bool
     }
-    let dotnet name (parameters:DotnetApplicationProperties) =
+
+    let defaultDirectives = {AlwaysRebuild = false; IgnoreBuild = false}
+
+    let dotnetSpecificBuild name buildDirectives (parameters:DotnetApplicationProperties) =
         {
             Name = name
             DependsOn = parameters.DependsOn
             Parameters = DotnetApplication {DotnetApplication.Publish = parameters.Publish }
             Deploy = parameters.Deploy
-            AlwaysRebuild = false
-            IgnoreBuild = false
+            AlwaysRebuild = buildDirectives.AlwaysRebuild
+            IgnoreBuild = buildDirectives.IgnoreBuild
         }
-    let custom name (parameters:CustomApplicationProperties) =
+
+    let dotnet name (parameters:DotnetApplicationProperties) =
+        parameters |> (dotnetSpecificBuild name defaultDirectives)
+
+    let customSpecificBuild name buildDirectives (parameters:CustomApplicationProperties) =
         if parameters.DependsOn |> Array.isEmpty then failwithf "Custom application should have at least one folder dependency for app %s" name
         {
             Name = name
             DependsOn = parameters.DependsOn
             Parameters = CustomApplication { Publish = parameters.Publish }
             Deploy = parameters.Deploy
-            AlwaysRebuild = parameters.AlwaysRebuild
-            IgnoreBuild = parameters.IgnoreBuild
+            AlwaysRebuild = buildDirectives.AlwaysRebuild
+            IgnoreBuild = buildDirectives.IgnoreBuild
         }
+
+    let rec custom name (parameters:CustomApplicationProperties) =
+        parameters |> (customSpecificBuild name defaultDirectives)
+
 
 module Graph =
     let readProjectStructure dir (apps:Application array) (projects: Project seq) =
@@ -147,14 +162,14 @@ module Graph =
             structure.Applications
             |> Array.where (fun app ->
                 printfn "application %s has a always-rebuild option = %b" app.Name app.AlwaysRebuild
-                app.AlwaysRebuild = true)         
-        
+                app.AlwaysRebuild = true)
+
         let getAllIgnoredApplication =
             structure.Applications
             |> Array.where(fun app ->
                 printfn "application %s has an ignore option = %b" app.Name app.IgnoreBuild
                 app.IgnoreBuild = true)
-        
+
         let allImpactedProjects =
             seq {
                 yield! directImpactedProjects |> Seq.collect (fun p -> p |> getProjectWithDependentProjects structure)
@@ -165,7 +180,7 @@ module Graph =
             |> Seq.filter (fun project ->
                 getAllIgnoredApplication |>
                 Array.choose getCorrespondingDotnetProject |>
-                Seq.contains project |> not)            
+                Seq.contains project |> not)
             |> Array.ofSeq
 
         let allImpactedApplications =
