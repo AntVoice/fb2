@@ -2,6 +2,5 @@
 
 set -e -o pipefail
 
-dotnet restore dotnet-fake.csproj
-dotnet nuget list source
-dotnet fake $@
+dotnet new tool-manifest
+dotnet tool install fake-cli
